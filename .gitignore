@@ -36,14 +36,19 @@ ENV/
 *.log
 
 # Model/checkpoint artifacts
-# checkpoints/
-# models/
-# *.ckpt
-# *.pt
-# *.pth
+checkpoints/
+models/
+*.ckpt
+*.pt
+*.pth
 
 # Assignment-generated outputs (safe to regenerate)
-# release/part-1/out*.txt
-# release/part-2/results/*.sql
-# release/part-2/results/*.pkl
-# release/part-2/records/*.pkl
+release/part-1/out*.txt
+release/part-2/results/*.sql
+release/part-2/results/*.pkl
+release/part-2/records/*.pkl
+
+# Latex files
+*.aux
+*.log
+*.out
