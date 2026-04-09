@@ -1,0 +1,49 @@
+# macOS
+.DS_Store
+
+# Python bytecode/cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build/distribution artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments and local env files
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Editor/IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Model/checkpoint artifacts
+# checkpoints/
+# models/
+# *.ckpt
+# *.pt
+# *.pth
+
+# Assignment-generated outputs (safe to regenerate)
+# release/part-1/out*.txt
+# release/part-2/results/*.sql
+# release/part-2/results/*.pkl
+# release/part-2/records/*.pkl
