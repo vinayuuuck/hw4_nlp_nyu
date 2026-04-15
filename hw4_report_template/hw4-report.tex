@@ -4,7 +4,7 @@
 
 \title{CSCI 2590: Assignment 4}
 
-\author{Full Name \\ Net ID \\ \<Your Github Link \>}
+\author{Full Name \\ Net ID \\ Your Github Link}
 
 \date{}
 
@@ -17,15 +17,32 @@
 Please provide a link to your github repository, which contains the code for both Part I and Part II. \textcolor{gray}{TODO}
 \section*{Q2. 1.}
 Describe your transformation of dataset.
-\textcolor{gray}{TODO}
+We design a \textbf{label-preserving noisy text transformation} that simulates realistic user writing errors in movie reviews. The transformation is applied to each review independently with two operations:
+
+\begin{itemize}
+  \item \textbf{Synonym substitution:} For each eligible content word, with probability $p_s=0.12$, replace it with a WordNet synonym (if available). We preserve casing and skip replacements that change token type (e.g., punctuation/numbers).
+  \item \textbf{Keyboard-typo injection:} For each eligible word, with probability $p_t=0.08$, replace one character by a nearby QWERTY key (e.g., \texttt{e}$\rightarrow$\texttt{r}, \texttt{i}$\rightarrow$\texttt{o}).
+\end{itemize}
+
+To reduce label flips, we do \textbf{not} modify negation cues and sentiment-critical markers such as \textit{not, never, no, n't}. We also skip very short words (length $<3$), stopwords, and special tokens. This keeps transformed text grammatical enough for humans while still introducing distribution shift for the model.
+
+This transformation is \textbf{reasonable} because real users commonly produce exactly these variations at test time: minor typos and lexical paraphrases. At the same time, it is non-trivial for the classifier, since token-level perturbations change surface forms and can degrade robustness without changing underlying sentiment.
+
+Examples:
+\begin{itemize}
+  \item Original: ``This movie is absolutely amazing and very entertaining.''
+  \item Transformed: ``This film is absolutely amazinh and very entertaining.''
+  \item Original: ``I did not like this boring plot at all.''
+  \item Transformed: ``I did not like this dull plot at all.''
+\end{itemize}
 % \section*{Part I. Q2. 2. No written element, submit \texttt{out\_transformed.txt} to autograder. }
 \section*{Q3. 1}
 \textbf{Report \& Analysis}
     \begin{itemize}
-        \item Report the accuracy values for both the original and transformed test data evaluations.  \textcolor{gray}{TODO}
-        \item Analyze and discuss the following: (1) Did the model's performance on the transformed test data improve after applying data augmentation? (2) How did data augmentation affect the model's performance on the original test data? Did it enhance or diminish its accuracy? \textcolor{gray}{TODO}
-        \item Offer an intuitive explanation for the observed results, considering the impact of data augmentation on model training. \textcolor{gray}{TODO}
-        \item Explain one limitation of the data augmentation approach used here to improve performance on out-of-distribution (OOD) test sets. \textcolor{gray}{TODO}
+    \item Reported accuracies: original baseline model on original test set = 0.93116; baseline model on transformed test set = 0.90892; augmented model on original test set = 0.92968; augmented model on transformed test set = 0.91504.
+    \item The transformed-set performance improved after augmentation (0.90892 $\rightarrow$ 0.91504, +0.00612 absolute). On the original set, augmentation caused a small decrease (0.93116 $\rightarrow$ 0.92968, -0.00148 absolute).
+    \item Intuitively, augmentation exposes the model to perturbations similar to the evaluation-time distribution shift, so the classifier becomes less sensitive to lexical/surface variations. This improves robustness on transformed inputs, but slightly trades off specialization to the clean original distribution.
+    \item One limitation is coverage mismatch: the augmented examples reflect only one handcrafted perturbation family. If real OOD inputs differ (e.g., different typo patterns, syntax changes, or paraphrases), gains may not transfer well.
     \end{itemize}
 \section*{Part II. Q4}
 % 
@@ -38,11 +55,11 @@ Describe your transformation of dataset.
 \toprule
 Statistics Name & Train & Dev \\
 \midrule
-Number of examples & \textcolor{gray}{XXX} & \textcolor{gray}{XXX} \\
-Mean sentence length & \textcolor{gray}{XXX}& \textcolor{gray}{XXX} \\
-Mean SQL query length & \textcolor{gray}{XXX}& \textcolor{gray}{XXX}  \\
-Vocabulary size (natural language)& \textcolor{gray}{XXX}& \textcolor{gray}{XXX}  \\
-Vocabulary size (SQL)& \textcolor{gray}{XXX}& \textcolor{gray}{XXX}  \\
+Number of examples & 4225 & 466 \\
+Mean sentence length & 17.10 & 17.07 \\
+Mean SQL query length & 216.37 & 210.05  \\
+Vocabulary size (natural language)& 791 & 465  \\
+Vocabulary size (SQL)& 555 & 395  \\
 \bottomrule
 \end{tabular}
 \caption{Data statistics before any pre-processing. \textcolor{gray}{You need to at least provide the statistics listed above, and can add new entries.}}
@@ -55,8 +72,10 @@ Vocabulary size (SQL)& \textcolor{gray}{XXX}& \textcolor{gray}{XXX}  \\
 \toprule
 \textbf{T5 fine-tuned model} & Train & Dev \\
 \midrule
-\multicolumn{3}{l}{} \\ % \textcolor{gray}{(T5 fine-tuning or T5 from scratch)}} \\
-\textcolor{gray}{Statistics Name} & \textcolor{gray}{XXX}& \textcolor{gray}{XXX} \\
+Mean sentence length & 22.10 & 22.07 \\
+Mean SQL query length & 217.37 & 211.05 \\
+Vocabulary size (natural language) & 795 & 469 \\
+Vocabulary size (SQL) & 556 & 396 \\
 \midrule
 \bottomrule
 \end{tabular}
@@ -119,7 +138,7 @@ Hyperparameters & \textcolor{gray}{List the key hyperparameters that you used, i
   \multicolumn{3}{l}{\textbf{Test Results}} \\
   \midrule
   T5 fine-tuning & XX.XX & XX.XX \\
-Fully Trained model (from scratch) & XX.XX & XX.XX
+Fully Trained model (from scratch) & XX.XX & XX.XX \\
   \bottomrule
 \end{tabular}  
 \caption{Development and test results. \textcolor{gray}{Use this table to report quantitative results for both dev and test results.}}
