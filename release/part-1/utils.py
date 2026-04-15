@@ -44,7 +44,89 @@ def custom_transform(example):
 
     # You should update example["text"] using your transformation
 
-    raise NotImplementedError
+    synonym_prob = 0.12
+    typo_prob = 0.08
+    negation_words = {"not", "no", "never", "n't"}
+    stopwords = {
+        "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "has", "he", "in", "is",
+        "it", "its", "of", "on", "that", "the", "to", "was", "were", "will", "with", "this", "these",
+        "those", "i", "you", "we", "they", "my", "your", "our", "their", "me", "him", "her", "them"
+    }
+    qwerty_neighbors = {
+        "a": "qwsz", "b": "vghn", "c": "xdfv", "d": "serfcx", "e": "wsdfr", "f": "drtgvc", "g": "ftyhbv",
+        "h": "gyujnb", "i": "ujko", "j": "huikmn", "k": "jiolm", "l": "kop", "m": "njk", "n": "bhjm",
+        "o": "iklp", "p": "ol", "q": "wa", "r": "edfgt", "s": "awedxz", "t": "rfghy", "u": "yhjki",
+        "v": "cfgb", "w": "qase", "x": "zsdc", "y": "tghu", "z": "asx"
+    }
+
+    def preserve_case(original, replacement):
+        if original.isupper():
+            return replacement.upper()
+        if original[:1].isupper():
+            return replacement.capitalize()
+        return replacement
+
+    def eligible_token(token):
+        lower = token.lower()
+        if not token.isalpha():
+            return False
+        if len(token) < 3:
+            return False
+        if lower in negation_words:
+            return False
+        if lower in stopwords:
+            return False
+        return True
+
+    def replace_with_synonym(token):
+        if (not eligible_token(token)) or random.random() >= synonym_prob:
+            return token
+
+        lower = token.lower()
+        candidates = set()
+        for synset in wordnet.synsets(lower):
+            for lemma in synset.lemmas():
+                candidate = lemma.name().replace("_", " ").lower().strip()
+                if candidate == lower:
+                    continue
+                if " " in candidate or "-" in candidate:
+                    continue
+                if not candidate.isalpha():
+                    continue
+                candidates.add(candidate)
+
+        if not candidates:
+            return token
+
+        replacement = random.choice(list(candidates))
+        return preserve_case(token, replacement)
+
+    def inject_typo(token):
+        if (not eligible_token(token)) or random.random() >= typo_prob:
+            return token
+
+        candidate_positions = [i for i, ch in enumerate(token) if ch.lower() in qwerty_neighbors]
+        if not candidate_positions:
+            return token
+
+        idx = random.choice(candidate_positions)
+        original_char = token[idx]
+        neighbor_chars = qwerty_neighbors[original_char.lower()]
+        replacement_char = random.choice(neighbor_chars)
+        if original_char.isupper():
+            replacement_char = replacement_char.upper()
+
+        return token[:idx] + replacement_char + token[idx + 1:]
+
+    tokens = word_tokenize(example["text"])
+    transformed_tokens = []
+
+    for token in tokens:
+        transformed = replace_with_synonym(token)
+        transformed = inject_typo(transformed)
+        transformed_tokens.append(transformed)
+
+    example["text"] = TreebankWordDetokenizer().detokenize(transformed_tokens)
 
     ##### YOUR CODE ENDS HERE ######
 

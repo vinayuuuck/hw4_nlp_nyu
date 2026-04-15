@@ -20,7 +20,14 @@ def initialize_model(args):
     or training a T5 model initialized with the 'google-t5/t5-small' config
     from scratch.
     '''
-    pass
+    if args.finetune:
+        model = T5ForConditionalGeneration.from_pretrained("google-t5/t5-small")
+    else:
+        config = T5Config.from_pretrained("google-t5/t5-small")
+        model = T5ForConditionalGeneration(config)
+
+    model.to(DEVICE)
+    return model
 
 def mkdir(dirpath):
     if not os.path.exists(dirpath):
@@ -31,11 +38,23 @@ def mkdir(dirpath):
 
 def save_model(checkpoint_dir, model, best):
     # Save model checkpoint to be able to load the model later
-    pass
+    save_dir = os.path.join(checkpoint_dir, "best" if best else "last")
+    mkdir(save_dir)
+    model_to_save = model.module if hasattr(model, "module") else model
+    model_to_save.save_pretrained(save_dir)
 
 def load_model_from_checkpoint(args, best):
     # Load model from a checkpoint
-    pass
+    model_type = 'ft' if args.finetune else 'scr'
+    checkpoint_dir = os.path.join('checkpoints', f'{model_type}_experiments', args.experiment_name)
+    load_dir = os.path.join(checkpoint_dir, "best" if best else "last")
+
+    if not os.path.isdir(load_dir):
+        raise FileNotFoundError(f"Checkpoint not found at {load_dir}")
+
+    model = T5ForConditionalGeneration.from_pretrained(load_dir)
+    model.to(DEVICE)
+    return model
 
 def initialize_optimizer_and_scheduler(args, model, epoch_length):
     optimizer = initialize_optimizer(args, model)
@@ -65,7 +84,7 @@ def initialize_optimizer(args, model):
             optimizer_grouped_parameters, lr=args.learning_rate, eps=1e-8, betas=(0.9, 0.999)
         )
     else:
-        pass
+        raise NotImplementedError
 
     return optimizer
         
