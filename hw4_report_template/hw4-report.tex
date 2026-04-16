@@ -8,25 +8,42 @@
 
 \date{}
 
-
 \colmfinalcopy
 \begin{document}
 \maketitle
-% \section*{Part I. Q1} No written element, submit \texttt{out\_original.txt}  to autograder.
+% \section*{Part I. Q1} No written element, submit
+% \texttt{out\_original.txt}  to autograder.
 \section*{Q0. 1.}
-Please provide a link to your github repository, which contains the code for both Part I and Part II. \textcolor{gray}{TODO}
+Please provide a link to your github repository, which contains the
+code for both Part I and Part II. \textcolor{gray}{TODO}
 \section*{Q2. 1.}
 Describe your transformation of dataset.
-We design a \textbf{label-preserving noisy text transformation} that simulates realistic user writing errors in movie reviews. The transformation is applied to each review independently with two operations:
+We design a \textbf{label-preserving noisy text transformation} that
+simulates realistic user writing errors in movie reviews. The
+transformation is applied to each review independently with two operations:
 
 \begin{itemize}
-  \item \textbf{Synonym substitution:} For each eligible content word, with probability $p_s=0.12$, replace it with a WordNet synonym (if available). We preserve casing and skip replacements that change token type (e.g., punctuation/numbers).
-  \item \textbf{Keyboard-typo injection:} For each eligible word, with probability $p_t=0.08$, replace one character by a nearby QWERTY key (e.g., \texttt{e}$\rightarrow$\texttt{r}, \texttt{i}$\rightarrow$\texttt{o}).
+  \item \textbf{Synonym substitution:} For each eligible content
+    word, with probability $p_s=0.30$, replace it with a WordNet
+    synonym (if available). We preserve casing and skip replacements
+    that change token type (e.g., punctuation/numbers).
+  \item \textbf{Keyboard-typo injection:} For each eligible word,
+    with probability $p_t=0.08$, replace one character by a nearby
+    QWERTY key (e.g., \texttt{e}$\rightarrow$\texttt{r},
+    \texttt{i}$\rightarrow$\texttt{o}).
 \end{itemize}
 
-To reduce label flips, we do \textbf{not} modify negation cues and sentiment-critical markers such as \textit{not, never, no, n't}. We also skip very short words (length $<3$), stopwords, and special tokens. This keeps transformed text grammatical enough for humans while still introducing distribution shift for the model.
+To reduce label flips, we do \textbf{not} modify negation cues and
+sentiment-critical markers such as \textit{not, never, no, n't}. We
+also skip very short words (length $<3$), stopwords, and special
+tokens. This keeps transformed text grammatical enough for humans
+while still introducing distribution shift for the model.
 
-This transformation is \textbf{reasonable} because real users commonly produce exactly these variations at test time: minor typos and lexical paraphrases. At the same time, it is non-trivial for the classifier, since token-level perturbations change surface forms and can degrade robustness without changing underlying sentiment.
+This transformation is \textbf{reasonable} because real users
+commonly produce exactly these variations at test time: minor typos
+and lexical paraphrases. At the same time, it is non-trivial for the
+classifier, since token-level perturbations change surface forms and
+can degrade robustness without changing underlying sentiment.
 
 Examples:
 \begin{itemize}
@@ -35,178 +52,291 @@ Examples:
   \item Original: ``I did not like this boring plot at all.''
   \item Transformed: ``I did not like this dull plot at all.''
 \end{itemize}
-% \section*{Part I. Q2. 2. No written element, submit \texttt{out\_transformed.txt} to autograder. }
+% \section*{Part I. Q2. 2. No written element, submit
+% \texttt{out\_transformed.txt} to autograder. }
 \section*{Q3. 1}
 \textbf{Report \& Analysis}
-    \begin{itemize}
-    \item Reported accuracies: original baseline model on original test set = 0.93116; baseline model on transformed test set = 0.90892; augmented model on original test set = 0.92968; augmented model on transformed test set = 0.91504.
-    \item The transformed-set performance improved after augmentation (0.90892 $\rightarrow$ 0.91504, +0.00612 absolute). On the original set, augmentation caused a small decrease (0.93116 $\rightarrow$ 0.92968, -0.00148 absolute).
-    \item Intuitively, augmentation exposes the model to perturbations similar to the evaluation-time distribution shift, so the classifier becomes less sensitive to lexical/surface variations. This improves robustness on transformed inputs, but slightly trades off specialization to the clean original distribution.
-    \item One limitation is coverage mismatch: the augmented examples reflect only one handcrafted perturbation family. If real OOD inputs differ (e.g., different typo patterns, syntax changes, or paraphrases), gains may not transfer well.
-    \end{itemize}
+\begin{itemize}
+  \item Reported accuracies: original baseline model on original test
+    set = 0.93116; baseline model on transformed test set = 0.88592;
+    augmented model on original test set = 0.92584; augmented model
+    on transformed test set = 0.89832.
+  \item The transformed-set performance improved after augmentation
+    (0.88592 $\rightarrow$ 0.89832, +0.01240 absolute). On the
+    original set, augmentation caused a small decrease (0.93116
+    $\rightarrow$ 0.92584, -0.00532 absolute).
+  \item Intuitively, augmentation exposes the model to perturbations
+    similar to the evaluation-time distribution shift, so the
+    classifier becomes less sensitive to lexical/surface variations.
+    This improves robustness on transformed inputs, but slightly
+    trades off specialization to the clean original distribution.
+  \item One limitation is coverage mismatch: the augmented examples
+    reflect only one handcrafted perturbation family. If real OOD
+    inputs differ (e.g., different typo patterns, syntax changes, or
+    paraphrases), gains may not transfer well.
+\end{itemize}
 \section*{Part II. Q4}
-% 
+%
 % \section{Data Statistics and Processing (8pt)}
 
-
 \begin{table}[h!]
-\centering
-\begin{tabular}{lcc}
-\toprule
-Statistics Name & Train & Dev \\
-\midrule
-Number of examples & 4225 & 466 \\
-Mean sentence length & 17.10 & 17.07 \\
-Mean SQL query length & 216.37 & 210.05  \\
-Vocabulary size (natural language)& 791 & 465  \\
-Vocabulary size (SQL)& 555 & 395  \\
-\bottomrule
-\end{tabular}
-\caption{Data statistics before any pre-processing. \textcolor{gray}{You need to at least provide the statistics listed above, and can add new entries.}}
-\label{tab:data_stats_before}
+  \centering
+  \begin{tabular}{lcc}
+    \toprule
+    Statistics Name & Train & Dev \\
+    \midrule
+    Number of examples & 4225 & 466 \\
+    Mean sentence length & 17.10 & 17.07 \\
+    Mean SQL query length & 216.37 & 210.05  \\
+    Vocabulary size (natural language)& 791 & 465  \\
+    Vocabulary size (SQL)& 555 & 395  \\
+    \bottomrule
+  \end{tabular}
+  \caption{Data statistics before any pre-processing.
+    \textcolor{gray}{You need to at least provide the statistics listed
+  above, and can add new entries.}}
+  \label{tab:data_stats_before}
 \end{table}
 
 \begin{table}[h!]
-\centering
-\begin{tabular}{lcc}
-\toprule
-\textbf{T5 fine-tuned model} & Train & Dev \\
-\midrule
-Mean sentence length & 22.10 & 22.07 \\
-Mean SQL query length & 217.37 & 211.05 \\
-Vocabulary size (natural language) & 795 & 469 \\
-Vocabulary size (SQL) & 556 & 396 \\
-\midrule
-\bottomrule
-\end{tabular}
-\caption{Data statistics after pre-processing. \textcolor{gray}{You need to at least provide the statistics listed in \autoref{tab:data_stats_before} (except for the number of lines), and can add new entries.}}
-\label{tab:data_stats_after}
+  \centering
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{T5 fine-tuned model} & Train & Dev \\
+    \midrule
+    Mean sentence length & 22.10 & 22.07 \\
+    Mean SQL query length & 217.37 & 211.05 \\
+    Vocabulary size (natural language) & 795 & 469 \\
+    Vocabulary size (SQL) & 556 & 396 \\
+    \midrule
+    \bottomrule
+  \end{tabular}
+  \caption{Data statistics after pre-processing. \textcolor{gray}{You
+      need to at least provide the statistics listed in
+      \autoref{tab:data_stats_before} (except for the number of lines),
+  and can add new entries.}}
+  \label{tab:data_stats_after}
 \end{table}
-
-
 
 \newpage
 
-
-
-
 \section*{Q5}\label{sec:t5}
 
-
 \begin{table}[h!]
-\centering
-\begin{tabular}{p{3.5cm}p{10cm}}
-\toprule
-Design choice & Description \\
-\midrule
-Data processing & \textcolor{gray}{Describe the data processing steps you undertook, if any.} \\
-Tokenization & \textcolor{gray}{Describe how you did the tokenization for the inputs to the encoder and decoder. If you use anything else than the default T5 tokenizer, specify what you use, and why you choose to use it.} \\
-Architecture & \textcolor{gray}{Describe the components in the T5 architecture that you chose to fine-tune. Did you fine-tune the entire model, specific layers?} \\
-Hyperparameters & \textcolor{gray}{List the key hyperparameters that you used, including the learning rate, batch size, and stopping criteria.} \\
-\bottomrule
-\end{tabular}
-\caption{Details of the best-performing T5 model configurations (fine-tuned)}
-\label{tab:t5_results_ft}
+  \centering
+  \begin{tabular}{p{3.5cm}p{10cm}}
+    \toprule
+    Design choice & Description \\
+    \midrule
+    Data processing & Natural language input is transformed as
+    ``translate to SQL: $<$query$>$''. For train/dev, each input is
+    paired with SQL target from aligned .sql files. For test, only
+    encoder inputs are used. Batching uses dynamic padding in collate
+    functions with attention masks derived from non-pad tokens. \\
+    Tokenization & We use the default \texttt{google-t5/t5-small}
+    tokenizer for both encoder and decoder sides. Tokenization is
+    performed with \texttt{add\_special\_tokens=True}. Decoder
+    training uses shifted teacher forcing input (start token +
+    target[:-1]) and target tokens as labels. Decoder start token is
+    tokenizer pad token id (T5 default behavior). \\
+    Architecture & We fine-tune full pretrained
+    \texttt{T5ForConditionalGeneration} model from
+    \texttt{google-t5/t5-small} (\texttt{--finetune}). No layers are frozen. \\
+    Hyperparameters & Optimizer: AdamW; scheduler: cosine
+    (configurable), warmup epochs: 0; learning rate: 3e-4; weight
+    decay: 0; batch size: 16; max epochs: 12; early stopping
+    patience: 5 epochs; gradient accumulation steps: 2; label
+    smoothing: 0.05; gradient clipping max norm: 1.0. Generation for
+    eval/test uses beam search (num beams = 4), greedy-free decoding
+    (\texttt{do\_sample=False}), and max new tokens = 512. \\
+    \bottomrule
+  \end{tabular}
+  \caption{Details of the best-performing T5 model configurations (fine-tuned)}
+  \label{tab:t5_results_ft}
 \end{table}
-
-
-
-
-
-
 
 \section*{Q6. }
 \label{Q6}
 
-\paragraph{Quantitative Results:} 
+\paragraph{Quantitative Results:}
 \begin{table}[h!]
-\centering
-\begin{tabular}{lcc}
-  \toprule
-  System & Query EM & F1 score\\
-  \midrule
-  \multicolumn{3}{l}{\textbf{Dev Results}} \\
-  \midrule
-  
-  \multicolumn{3}{l}{T5 fine-tuned} \\
-  Fully Trained model (from scratch) & XX.XX & XX.XX \\[5pt]
-  % Variant1 & XX.XX & XX.XX \\
-  % Variant2 & XX.XX & XX.XX \\
-  % Variant3 & XX.XX & XX.XX \\
-  
-  \midrule
-  \multicolumn{3}{l}{\textbf{Test Results}} \\
-  \midrule
-  T5 fine-tuning & XX.XX & XX.XX \\
-Fully Trained model (from scratch) & XX.XX & XX.XX \\
-  \bottomrule
-\end{tabular}  
-\caption{Development and test results. \textcolor{gray}{Use this table to report quantitative results for both dev and test results.}}
-\label{tab:results}
+  \centering
+  \begin{tabular}{lcc}
+    \toprule
+    System & Query EM & F1 score\\
+    \midrule
+    \multicolumn{3}{l}{\textbf{Dev Results}} \\
+    \midrule
+
+    Baseline scratch model (\texttt{scr}) & 0.21 & 26.77 \\[5pt]
+    \multicolumn{3}{l}{T5 fine-tuned} \\
+    Fine-tuned model (\texttt{experiment}) & 1.93 & 77.86 \\[5pt]
+    Fine-tuned model (\texttt{ft\_\_tuned\_v2}) & 2.36 & 77.02 \\[5pt]
+    % Variant1 & XX.XX & XX.XX \\
+    % Variant2 & XX.XX & XX.XX \\
+    % Variant3 & XX.XX & XX.XX \\
+
+    \midrule
+    \multicolumn{3}{l}{\textbf{Test Results}} \\
+    \midrule
+    T5 fine-tuning (\texttt{experiment}) & 0.00 & 73.53 \\
+    T5 fine-tuning (\texttt{ft\_tuned\_v2}) & 0.00 & 73.68 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Development and test results. \textcolor{gray}{Use this
+  table to report quantitative results for both dev and test results.}}
+  \label{tab:results}
 \end{table}
 
+Dev set additional metrics for scratch model \texttt{scr}: Record EM
+= 21.24 and SQL execution error rate = 2.36\%.
 
-\paragraph{Qualitative Error Analysis:} 
+Dev set additional metrics for fine-tuned model \texttt{experiment}:
+Record EM = 74.25 and SQL execution error rate = 12.02\%.
+
+Dev set additional metrics for fine-tuned model
+\texttt{ft\_tuned\_v2}: Record EM = 73.82, dev loss = 0.0518.
+
+Hidden test (Gradescope) for \texttt{ft\_tuned\_v2}: SQL EM = 0.00\%,
+Record EM = 70.60\%, Record F1 = 73.68\%, awarded points = 25.0/25.
+
+\textbf{Training Notes} This model used
+\texttt{grad\_accum\_steps=2}, \texttt{label\_smoothing=0.05}, and
+default beam-search decoding (\texttt{num\_beams=4},
+\texttt{do\_sample=False}, \texttt{max\_new\_tokens=512}).
+Also keep in mind that the learning rate here was 3e-4 which is not
+conventionally used.
+
+
+\paragraph{Qualitative Error Analysis:}
 
 \begin{table}
   \centering
-  \begin{tabular}{p{2cm}p{3cm}p{3cm}p{5cm}}
+  \begin{tabular}{p{2.5cm}p{2.3cm}p{5.3cm}p{2.2cm}}
     \toprule
-    \textbf{Error Type}& \textbf{Example Of Error} & \textbf{Error Description} & \textbf{Statistics} \\
+    \textbf{Error Type}& \textbf{Example} & \textbf{Error Description} & \textbf{Statistics} \\
     \midrule
-    \textcolor{gray}{Error name}  & \textcolor{gray}{Snippet from datapoint examplifying error} & \textcolor{gray}{Describe the error in natural language} & \textcolor{gray}{Provide statistics in the form ``COUNT/TOTAL'' on the prevalence of the error. TOTAL is the number of relevant examples (e.g. number of queries, for query-level error), and COUNT is the number of examples that showed this error.}  \\
-    
-    \midrule
-    &  &   & \\
-    % \bottomrule
+    SQL execution error & E1 (idx=2) & Generated SQL has invalid predicate fragment and fails to execute in SQLite. & 64/466 \\
+    Condition value mismatch & E2 (idx=17) & Constraints use wrong literal/time range (e.g., exact departure time replaced by broad interval), changing retrieved records. & 93/466 \\
+    Selected column mismatch & E3 (idx=97) & Projection is incomplete: model omits required output field(s), so answer misses requested attributes. & 19/466 \\
+    Aggregation mismatch & E4 (idx=20) & Model optimizes wrong quantity (earliest departure) instead of requested objective (maximum stops). & 1/466 \\
+    Surface-form SQL mismatch & E5 (idx=0) & SQL strings differ in formatting/alias punctuation while intent appears equivalent, hurting SQL EM but not always record metrics. & 236/466 \\
+    \bottomrule
   \end{tabular}
   \label{tab:qualitative}
-  \caption{Use this table for your qualitative analysis on the dev set.}\label{tab: qualitative}
+  \caption{Use this table for your qualitative analysis on the dev
+  set.}\label{tab: qualitative}
 \end{table}
 
+\paragraph{Detailed Examples (exact SQL and error):}
+
+\textbf{E1. SQL execution error (idx=2)}
+
+\textbf{NL:} list all arrivals from any airport to baltimore on thursday morning arriving before 9am
+
+\textbf{Gold SQL:}
+{\footnotesize\ttfamily\detokenize{SELECT state_1.state_code FROM state state_1 WHERE state_1.state_code = 'ASD';}\par}
+
+\textbf{Predicted SQL:}
+{\footnotesize\ttfamily\detokenize{SELECT DISTINCT flight_1.flight_id FROM flight flight_1, airport airport_1, airport_service airport_service_1, city city_1, airport airport_1, days days_1, date_day date_day_1 WHERE flight_1.departure_time BETWEEN 0 AND 1200 AND( flight_1.from_airport = airport_1.airport_code AND airport_1.airport_code = 'BALTIMORE' AND( flight_1.flight_days = days_1.days_code AND days_1.day_name = date_day_1.day_name AND date_day_1.year = 1991 AND date_day_1.month_number = 5 AND date_day_1.day_number = 24 AND( flight_1.arrival_time  flight_1.departure_time AND 1 = 1 ) ) ) )}\par}
+
+\textbf{Exact error:} OperationalError: near "flight\_1": syntax error.
+
+\textbf{Reasoning:} Decoder produced malformed predicate (missing operator between \texttt{arrival\_time} and \texttt{departure\_time}), so query fails execution and returns empty record set.
+
+\textbf{E2. Condition value mismatch (idx=17)}
+
+\textbf{NL:} i would like a flight from oakland to philadelphia at one in the afternoon arriving at 5pm
+
+\textbf{Gold SQL:}
+{\footnotesize\ttfamily\detokenize{SELECT DISTINCT flight_1.flight_id FROM flight flight_1 , airport_service airport_service_1 , city city_1 , airport_service airport_service_2 , city city_2 WHERE flight_1.from_airport = airport_service_1.airport_code AND airport_service_1.city_code = city_1.city_code AND city_1.city_name = 'OAKLAND' AND( flight_1.to_airport = airport_service_2.airport_code AND airport_service_2.city_code = city_2.city_code AND city_2.city_name = 'PHILADELPHIA' AND( flight_1.departure_time = 1300 AND flight_1.arrival_time = 1700 ) )}\par}
+
+\textbf{Predicted SQL:}
+{\footnotesize\ttfamily\detokenize{SELECT DISTINCT flight_1.flight_id FROM flight flight_1, airport_service airport_service_1, city city_1, airport_service airport_service_2, city city_2 WHERE flight_1.departure_time BETWEEN 1200 AND 1800 AND( flight_1.from_airport = airport_service_1.airport_code AND airport_service_1.city_code = city_1.city_code AND city_1.city_name = 'OAKLAND' AND( flight_1.to_airport = airport_service_2.airport_code AND airport_service_2.city_code = city_2.city_code AND city_2.city_name = 'PHILADELPHIA' AND flight_1.arrival_time = 1700 ) )}\par}
+
+\textbf{Exact error:} Value constraint mismatch: gold uses \texttt{departure\_time = 1300}, prediction uses \texttt{departure\_time BETWEEN 1200 AND 1800}.
+
+\textbf{Reasoning:} Query stays executable, but broadened temporal constraint returns different flights. This lowers Record EM/F1 even when SQL remains syntactically valid.
+
+\textbf{E3. Selected column mismatch (idx=97)}
+
+\textbf{NL:} what ground transportation is available from the pittsburgh airport to downtown and how much does it cost
+
+\textbf{Gold SQL:}
+{\footnotesize\ttfamily\detokenize{SELECT DISTINCT ground_service_1.transport_type , ground_service_1.ground_fare FROM ground_service ground_service_1 , airport airport_1 , airport_service airport_service_1 , city city_1 , city city_2 WHERE ground_service_1.airport_code = airport_1.airport_code AND airport_1.airport_code = airport_service_1.airport_code AND airport_service_1.city_code = city_1.city_code AND city_1.city_name = 'PITTSBURGH' AND ground_service_1.city_code = city_2.city_code AND city_2.city_name = 'PITTSBURGH'}\par}
+
+\textbf{Predicted SQL:}
+{\footnotesize\ttfamily\detokenize{SELECT DISTINCT ground_service_1.transport_type FROM ground_service ground_service_1, airport airport_1, city city_1 WHERE ground_service_1.airport_code = airport_1.airport_code AND airport_1.airport_code = 'PIT' AND ground_service_1.airport_code = airport_1.airport_code AND airport_1.airport_code = 'PIT'}\par}
+
+\textbf{Exact error:} Projection mismatch: gold selects \texttt{transport\_type, ground\_fare}; prediction selects only \texttt{transport\_type}.
+
+\textbf{Reasoning:} User asks both mode and cost. Missing \texttt{ground\_fare} makes answer incomplete even if some rows overlap.
+
+\textbf{E4. Aggregation mismatch (idx=20)}
+
+\textbf{NL:} list all flights from boston to san francisco with the maximum number of stops
+
+\textbf{Gold SQL:}
+{\footnotesize\ttfamily\detokenize{SELECT DISTINCT flight_1.flight_id FROM flight flight_1 , airport_service airport_service_1 , city city_1 , airport_service airport_service_2 , city city_2 WHERE flight_1.from_airport = airport_service_1.airport_code AND airport_service_1.city_code = city_1.city_code AND city_1.city_name = 'BOSTON' AND( flight_1.to_airport = airport_service_2.airport_code AND airport_service_2.city_code = city_2.city_code AND city_2.city_name = 'SAN FRANCISCO' AND flight_1.stops =( SELECT MAX( stops ) FROM flight flight_1 , airport_service airport_service_1 , city city_1 , airport_service airport_service_2 , city city_2 WHERE flight_1.from_airport = airport_service_1.airport_code AND airport_service_1.city_code = city_1.city_code AND city_1.city_name = 'BOSTON' AND flight_1.to_airport = airport_service_2.airport_code AND airport_service_2.city_code = city_2.city_code AND city_2.city_name = 'SAN FRANCISCO' ) )}\par}
+
+\textbf{Predicted SQL:}
+{\footnotesize\ttfamily\detokenize{SELECT DISTINCT flight_1.flight_id FROM flight flight_1, airport_service airport_service_1, city city_1, airport_service airport_service_2, city city_2 WHERE flight_1.departure_time =( SELECT MIN( flight_1.departure_time ) FROM flight flight_1, airport_service airport_service_1, city city_1, airport_service airport_service_2, city city_2 WHERE flight_1.from_airport = airport_service_1.airport_code AND airport_service_1.city_code = city_1.city_code AND city_1.city_name = 'BOSTON' AND flight_1.to_airport = airport_service_2.airport_code AND airport_service_2.city_code = city_2.city_code AND city_2.city_name = 'SAN FRANCISCO' ) AND( flight_1.from_airport = airport_service_1.airport_code AND airport_service_1.city_code = city_1.city_code AND city_1.city_name = 'BOSTON' AND flight_1.to_airport = airport_service_2.airport_code AND airport_service_2.city_code = city_2.city_code AND city_2.city_name = 'SAN FRANCISCO' )}\par}
+
+\textbf{Exact error:} Aggregation objective mismatch: gold uses \texttt{MAX(stops)}; prediction uses \texttt{MIN(departure\_time)}.
+
+\textbf{Reasoning:} Intent shifts from maximizing stops to earliest departure. Semantic target changes completely, so record overlap is typically low.
+
+\textbf{E5. Surface-form SQL mismatch (idx=0)}
+
+\textbf{NL:} what flights are available tomorrow from denver to philadelphia
+
+\textbf{Gold SQL:}
+{\footnotesize\ttfamily\detokenize{SELECT DISTINCT flight_1.flight_id FROM flight flight_1 , airport_service airport_service_1 , city city_1 , airport_service airport_service_2 , city city_2 , days days_1 , date_day date_day_1 WHERE flight_1.from_airport = airport_service_1.airport_code AND airport_service_1.city_code = city_1.city_code AND city_1.city_name = 'DENVER' AND( flight_1.to_airport = airport_service_2.airport_code AND airport_service_2.city_code = city_2.city_code AND city_2.city_name = 'PHILADELPHIA' AND flight_1.flight_days = days_1.days_code AND days_1.day_name = date_day_1.day_name AND date_day_1.year = 1991 AND date_day_1.month_number = 1 AND date_day_1.day_number = 20 )}\par}
+
+\textbf{Predicted SQL:}
+{\footnotesize\ttfamily\detokenize{SELECT DISTINCT flight_1.flight_id FROM flight flight_1, airport_service airport_service_1, city city_1, airport_service airport_service_2, city city_2, days days_1, date_day date_day_1 WHERE flight_1.from_airport = airport_service_1.airport_code AND airport_service_1.city_code = city_1.city_code AND city_1.city_name = 'DENVER' AND( flight_1.to_airport = airport_service_2.airport_code AND airport_service_2.city_code = city_2.city_code AND city_2.city_name = 'PHILADELPHIA' AND flight_1.flight_days = days_1.days_code AND days_1.day_name = date_day_1.day_name AND date_day_1.year = 1991 AND date_day_1.month_number = 1 AND date_day_1.day_number = 20 )}\par}
+
+\textbf{Exact error:} SQL string mismatch only (alias comma spacing differs: \texttt{flight\_1 , airport\_service...} vs \texttt{flight\_1, airport\_service...}).
+
+\textbf{Reasoning:} Semantics appear equivalent and execution can return same records, but exact string matching still marks SQL EM as incorrect.
 
 \section*{Q7.}
 
-Provide a link to a Google Drive that contains a model checkpoint used to generate outputs you have submitted. 
+Provide a link to a Google Drive that contains a model checkpoint
+used to generate outputs you have submitted.
 \textcolor{gray}{TODO}
 
 \section*{Extra Credit: }
 \textcolor{gray}{[Optional]}
-If you are doing an extra credit assignment, please describe your system here, as well as provide a link to a Google Drive that contains a model checkpoint used to generate outputs you have submitted. Report the same metrics you reported in \ref{Q6}Q6
-
-
+If you are doing an extra credit assignment, please describe your
+system here, as well as provide a link to a Google Drive that
+contains a model checkpoint used to generate outputs you have
+submitted. Report the same metrics you reported in \ref{Q6}Q6
 
 \section*{AI Usage}
-
 
 \noindent\textbf{1. AI Tools Used} \\
 (e.g., ChatGPT, Claude, Gemini) \\
 \hrulefill
 
-
-
 \noindent\textbf{2. How AI Was Used} \\
-Describe how you used AI (e.g., debugging, explaining concepts, generating code). \\
+Describe how you used AI (e.g., debugging, explaining concepts,
+generating code). \\
 \hrulefill
-
 
 \noindent\textbf{3. Example Prompts / Interactions} \\
 Provide 1--3 representative prompts or queries you used. \\
 \hrulefill
 
-
 \section*{Extra Credit: Vibe Jam user study}
 \textcolor{gray}{[Optional]}
-If you are doing Vibe Jam user study, please mention the following in gradescope in the Gradescope Assignment titled \textbf{``CS2590-Vibe Jam User Study"}
+If you are doing Vibe Jam user study, please mention the following in
+gradescope in the Gradescope Assignment titled \textbf{``CS2590-Vibe
+Jam User Study"}
 \begin{itemize}
-\item Email
-\item The user study completion code.
-\item The screenshot of compensation checklist.
+  \item Email
+  \item The user study completion code.
+  \item The screenshot of compensation checklist.
 \end{itemize}
-
-
-
-
-
 
 \end{document}

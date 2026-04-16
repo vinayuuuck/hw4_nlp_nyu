@@ -44,8 +44,6 @@ def custom_transform(example):
 
     # You should update example["text"] using your transformation
 
-    synonym_prob = 0.12
-    typo_prob = 0.08
     negation_words = {"not", "no", "never", "n't"}
     stopwords = {
         "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "has", "he", "in", "is",
@@ -58,6 +56,9 @@ def custom_transform(example):
         "o": "iklp", "p": "ol", "q": "wa", "r": "edfgt", "s": "awedxz", "t": "rfghy", "u": "yhjki",
         "v": "cfgb", "w": "qase", "x": "zsdc", "y": "tghu", "z": "asx"
     }
+
+    synonym_prob = 0.30
+    typo_prob = 0.08
 
     def preserve_case(original, replacement):
         if original.isupper():

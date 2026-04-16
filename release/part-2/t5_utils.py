@@ -26,6 +26,14 @@ def initialize_model(args):
         config = T5Config.from_pretrained("google-t5/t5-small")
         model = T5ForConditionalGeneration(config)
 
+    if getattr(args, "freeze_encoder", False):
+        for p in model.encoder.parameters():
+            p.requires_grad = False
+
+    if getattr(args, "freeze_embeddings", False):
+        for p in model.shared.parameters():
+            p.requires_grad = False
+
     model.to(DEVICE)
     return model
 

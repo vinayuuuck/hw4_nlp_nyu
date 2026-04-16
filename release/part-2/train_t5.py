@@ -23,6 +23,8 @@ def get_args():
 
     # Model hyperparameters
     parser.add_argument('--finetune', action='store_true', help="Whether to finetune T5 or not")
+    parser.add_argument('--freeze_encoder', action='store_true')
+    parser.add_argument('--freeze_embeddings', action='store_true')
     
     # Training hyperparameters
     parser.add_argument('--optimizer_type', type=str, default="AdamW", choices=["AdamW"],
@@ -36,8 +38,11 @@ def get_args():
                         help="How many epochs to warm up the learning rate for if using a scheduler")
     parser.add_argument('--max_n_epochs', type=int, default=10,
                         help="How many epochs to train the model for")
-    parser.add_argument('--patience_epochs', type=int, default=3,
+    parser.add_argument('--patience_epochs', type=int, default=5,
                         help="If validation performance stops improving, how many epochs should we wait before stopping?")
+    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--grad_accum_steps', type=int, default=1)
+    parser.add_argument('--label_smoothing', type=float, default=0.0)
 
     parser.add_argument('--use_wandb', action='store_true',
                         help="If set, we will use wandb to keep track of experiments")
@@ -51,12 +56,19 @@ def get_args():
 
     parser.add_argument('--generation_max_new_tokens', type=int, default=512)
     parser.add_argument('--generation_num_beams', type=int, default=4)
+    parser.add_argument('--generation_length_penalty', type=float, default=1.0)
+    parser.add_argument('--generation_repetition_penalty', type=float, default=1.0)
+    parser.add_argument('--generation_no_repeat_ngram_size', type=int, default=0)
+    parser.add_argument('--generation_early_stopping', action='store_true')
+
+    parser.add_argument('--force_select_prefix', action='store_true')
 
     args = parser.parse_args()
     return args
 
 def train(args, model, train_loader, dev_loader, optimizer, scheduler):
     best_f1 = -1
+    record_f1 = -1
     epochs_since_improvement = 0
 
     model_type = 'ft' if args.finetune else 'scr'
@@ -69,44 +81,56 @@ def train(args, model, train_loader, dev_loader, optimizer, scheduler):
         tr_loss = train_epoch(args, model, train_loader, optimizer, scheduler)
         print(f"Epoch {epoch}: Average train loss was {tr_loss}")
 
-        eval_loss, record_f1, record_em, sql_em, error_rate = eval_epoch(args, model, dev_loader,
-                                                                         gt_sql_path, model_sql_path,
-                                                                         gt_record_path, model_record_path)
-        print(f"Epoch {epoch}: Dev loss: {eval_loss}, Record F1: {record_f1}, Record EM: {record_em}, SQL EM: {sql_em}")
-        print(f"Epoch {epoch}: {error_rate*100:.2f}% of the generated outputs led to SQL errors")
+        eval_loss = None
+        record_em = None
+        sql_em = None
+        error_rate = None
+        did_eval = False
+
+        if epoch%5 == 0:
+            eval_loss, record_f1, record_em, sql_em, error_rate = eval_epoch(args, model, dev_loader,
+                                                                            gt_sql_path, model_sql_path,
+                                                                            gt_record_path, model_record_path)
+            print(f"Epoch {epoch}: Dev loss: {eval_loss}, Record F1: {record_f1}, Record EM: {record_em}, SQL EM: {sql_em}")
+            print(f"Epoch {epoch}: {error_rate*100:.2f}% of the generated outputs led to SQL errors")
+            did_eval = True
 
         if args.use_wandb:
-            result_dict = {
-                'train/loss' : tr_loss,
-                'dev/loss' : eval_loss,
-                'dev/record_f1' : record_f1,
-                'dev/record_em' : record_em,
-                'dev/sql_em' : sql_em,
-                'dev/error_rate' : error_rate,
-            }
+            result_dict = {'train/loss': tr_loss}
+            if did_eval:
+                result_dict.update({
+                    'dev/loss': eval_loss,
+                    'dev/record_f1': record_f1,
+                    'dev/record_em': record_em,
+                    'dev/sql_em': sql_em,
+                    'dev/error_rate': error_rate,
+                })
             wandb.log(result_dict, step=epoch)
 
-        if record_f1 > best_f1:
-            best_f1 = record_f1
-            epochs_since_improvement = 0
-        else:
-            epochs_since_improvement += 1
+        if did_eval:
+            if record_f1 > best_f1:
+                best_f1 = record_f1
+                epochs_since_improvement = 0
+            else:
+                epochs_since_improvement += 1
 
         save_model(checkpoint_dir, model, best=False)
-        if epochs_since_improvement == 0:
+        if did_eval and epochs_since_improvement == 0:
             save_model(checkpoint_dir, model, best=True)
 
-        if epochs_since_improvement >= args.patience_epochs:
+        if did_eval and epochs_since_improvement >= args.patience_epochs:
             break
 
 def train_epoch(args, model, train_loader, optimizer, scheduler):
     model.train()
     total_loss = 0
     total_tokens = 0
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
 
-    for encoder_input, encoder_mask, decoder_input, decoder_targets, _ in tqdm(train_loader):
-        optimizer.zero_grad()
+    optimizer.zero_grad()
+    grad_accum_steps = max(1, args.grad_accum_steps)
+
+    for step, (encoder_input, encoder_mask, decoder_input, decoder_targets, _) in enumerate(tqdm(train_loader)):
         encoder_input = encoder_input.to(DEVICE)
         encoder_mask = encoder_mask.to(DEVICE)
         decoder_input = decoder_input.to(DEVICE)
@@ -119,19 +143,33 @@ def train_epoch(args, model, train_loader, optimizer, scheduler):
         )['logits']
 
         non_pad = decoder_targets != PAD_IDX
-        loss = criterion(logits[non_pad], decoder_targets[non_pad])
+        raw_loss = criterion(logits[non_pad], decoder_targets[non_pad])
+        loss = raw_loss / grad_accum_steps
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
-        optimizer.step()
-        if scheduler is not None: 
-            scheduler.step()
+
+        should_step = ((step + 1) % grad_accum_steps == 0) or (step + 1 == len(train_loader))
+        if should_step:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+            optimizer.step()
+            if scheduler is not None:
+                scheduler.step()
+            optimizer.zero_grad()
 
         with torch.no_grad():
             num_tokens = torch.sum(non_pad).item()
-            total_loss += loss.item() * num_tokens
+            total_loss += raw_loss.item() * num_tokens
             total_tokens += num_tokens
 
     return total_loss / total_tokens
+
+def postprocess_sql_queries(queries, args):
+    processed = []
+    for q in queries:
+        q = q.strip()
+        if args.force_select_prefix and q != "" and not q.upper().startswith("SELECT"):
+            q = f"SELECT {q}"
+        processed.append(q)
+    return processed
         
 def eval_epoch(args, model, dev_loader, gt_sql_pth, model_sql_path, gt_record_path, model_record_path):
     '''
@@ -154,6 +192,10 @@ def eval_epoch(args, model, dev_loader, gt_sql_pth, model_sql_path, gt_record_pa
         max_new_tokens=args.generation_max_new_tokens,
         num_beams=args.generation_num_beams,
         do_sample=False,
+        length_penalty=args.generation_length_penalty,
+        repetition_penalty=args.generation_repetition_penalty,
+        no_repeat_ngram_size=args.generation_no_repeat_ngram_size,
+        early_stopping=args.generation_early_stopping,
         eos_token_id=tokenizer.eos_token_id,
         pad_token_id=tokenizer.pad_token_id,
     )
@@ -185,6 +227,8 @@ def eval_epoch(args, model, dev_loader, gt_sql_pth, model_sql_path, gt_record_pa
             batch_queries = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
             model_queries.extend([q.strip() for q in batch_queries])
 
+    model_queries = postprocess_sql_queries(model_queries, args)
+
     os.makedirs(os.path.dirname(model_sql_path), exist_ok=True)
     os.makedirs(os.path.dirname(model_record_path), exist_ok=True)
     save_queries_and_records(model_queries, model_sql_path, model_record_path)
@@ -210,6 +254,10 @@ def test_inference(args, model, test_loader, model_sql_path, model_record_path):
         max_new_tokens=args.generation_max_new_tokens,
         num_beams=args.generation_num_beams,
         do_sample=False,
+        length_penalty=args.generation_length_penalty,
+        repetition_penalty=args.generation_repetition_penalty,
+        no_repeat_ngram_size=args.generation_no_repeat_ngram_size,
+        early_stopping=args.generation_early_stopping,
         eos_token_id=tokenizer.eos_token_id,
         pad_token_id=tokenizer.pad_token_id,
     )
@@ -227,6 +275,8 @@ def test_inference(args, model, test_loader, model_sql_path, model_record_path):
             batch_queries = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
             model_queries.extend([q.strip() for q in batch_queries])
 
+    model_queries = postprocess_sql_queries(model_queries, args)
+
     os.makedirs(os.path.dirname(model_sql_path), exist_ok=True)
     os.makedirs(os.path.dirname(model_record_path), exist_ok=True)
     save_queries_and_records(model_queries, model_sql_path, model_record_path)
@@ -234,6 +284,10 @@ def test_inference(args, model, test_loader, model_sql_path, model_record_path):
 def main():
     # Get key arguments
     args = get_args()
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
+
     if args.use_wandb:
         # Recommended: Using wandb (or tensorboard) for result logging can make experimentation easier
         setup_wandb(args)
