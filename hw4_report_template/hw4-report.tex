@@ -4,7 +4,7 @@
 
 \title{CSCI 2590: Assignment 4}
 
-\author{Full Name \\ Net ID \\ Your Github Link}
+\author{Vinayak Singh Bhadoriya\\ vb2588 \\ \url{https://github.com/vinayuuuck/hw4_nlp_nyu}}
 
 \date{}
 
@@ -15,7 +15,10 @@
 % \texttt{out\_original.txt}  to autograder.
 \section*{Q0. 1.}
 Please provide a link to your github repository, which contains the
-code for both Part I and Part II. \textcolor{gray}{TODO}
+code for both Part I and Part II. 
+
+\url{https://github.com/vinayuuuck/hw4_nlp_nyu}
+
 \section*{Q2. 1.}
 Describe your transformation of dataset.
 We design a \textbf{label-preserving noisy text transformation} that
@@ -171,7 +174,8 @@ Examples:
     Baseline scratch model (\texttt{scr}) & 0.21 & 26.77 \\[5pt]
     \multicolumn{3}{l}{T5 fine-tuned} \\
     Fine-tuned model (\texttt{experiment}) & 1.93 & 77.86 \\[5pt]
-    Fine-tuned model (\texttt{ft\_\_tuned\_v2}) & 2.36 & 77.02 \\[5pt]
+    Fine-tuned model (\texttt{ft\_tuned\_v2}) & 2.36 & 77.02 \\[5pt]
+    Fine-tuned model (\texttt{ft\_tuned\_v3}) & 0.00 & 12.00 \\[5pt]
     % Variant1 & XX.XX & XX.XX \\
     % Variant2 & XX.XX & XX.XX \\
     % Variant3 & XX.XX & XX.XX \\
@@ -197,16 +201,39 @@ Record EM = 74.25 and SQL execution error rate = 12.02\%.
 Dev set additional metrics for fine-tuned model
 \texttt{ft\_tuned\_v2}: Record EM = 73.82, dev loss = 0.0518.
 
+Dev set additional metrics for fine-tuned model
+\texttt{ft\_tuned\_v3}: Record EM = 11.80, dev loss = 0.0591,
+and SQL execution error rate = 90.99\%.
+
 Hidden test (Gradescope) for \texttt{ft\_tuned\_v2}: SQL EM = 0.00\%,
 Record EM = 70.60\%, Record F1 = 73.68\%, awarded points = 25.0/25.
 
-\textbf{Training Notes} This model used
-\texttt{grad\_accum\_steps=2}, \texttt{label\_smoothing=0.05}, and
-default beam-search decoding (\texttt{num\_beams=4},
-\texttt{do\_sample=False}, \texttt{max\_new\_tokens=512}).
-Also keep in mind that the learning rate here was 3e-4 which is not
-conventionally used.
+\textbf{Training Notes(v2)}
+This model used \texttt{max\_n\_epochs=12},
+\texttt{patience\_epochs=5}, \texttt{learning\_rate=3e-4},
+\texttt{scheduler\_type=cosine}, \texttt{num\_warmup\_epochs=0},
+\texttt{batch\_size=16}, \texttt{grad\_accum\_steps=2}, and
+\texttt{label\_smoothing=0.05}. Decoding used deterministic
+beam-search (\texttt{num\_beams=4}, \texttt{do\_sample=False},
+\texttt{max\_new\_tokens=512}). Although 3e-4 is higher than
+commonly used fine-tuning rates, this run remained stable and achieved
+strong outcomes (dev F1 = 77.02, Record EM = 73.82, hidden-test F1 =
+73.68).
 
+\textbf{Training Notes(v3)}
+This model used a longer run budget (\texttt{max\_n\_epochs=15},
+\texttt{patience\_epochs=8}), lower learning rate
+(\texttt{learning\_rate=1e-4}), and linear scheduling with warmup
+(\texttt{scheduler\_type=linear}, \texttt{num\_warmup\_epochs=1}).
+It also used \texttt{grad\_accum\_steps=2},
+\texttt{label\_smoothing=0.0}, and stronger beam-search decoding
+(\texttt{num\_beams=8}, \texttt{no\_repeat\_ngram\_size=3},
+\texttt{length\_penalty=0.9},
+\texttt{repetition\_penalty=1.1}, \texttt{do\_sample=False},
+\texttt{max\_new\_tokens=512}). Compared to v2, this setup
+underperformed substantially (Record F1 = 12.00, Record EM = 11.80)
+and produced a very high SQL execution error rate (90.99\%),
+suggesting the generated SQL was often syntactically brittle.
 
 \paragraph{Qualitative Error Analysis:}
 
@@ -304,7 +331,8 @@ conventionally used.
 
 Provide a link to a Google Drive that contains a model checkpoint
 used to generate outputs you have submitted.
-\textcolor{gray}{TODO}
+
+\url{https://drive.google.com/drive/folders/1XQAue2TqZwwhJk-c_CHKEw27axCgT4xQ?usp=sharing}
 
 \section*{Extra Credit: }
 \textcolor{gray}{[Optional]}
